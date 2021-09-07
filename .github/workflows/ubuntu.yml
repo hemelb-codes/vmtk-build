@@ -1,0 +1,97 @@
+on:
+  push:
+    branches: [main]
+
+  release:
+    types: [created]
+
+env:
+  VTK_VERSION: 8.2.0
+  ITK_VERSION: 4.13.3
+  VMTK_VERSION: 1.4.0
+  PLATFORM: ubuntu
+
+jobs:
+
+  VTK-build:
+
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v2
+        with:
+          path: builder
+
+      - name: Cache
+        id: cache-vtk
+        uses: actions/cache@v2
+        with:
+          path: /opt/vtk
+          key: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}-${{ hashFiles('builder/configure-vtk-ubuntu.sh') }}
+
+      - uses: actions/setup-python@v2
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: APT packages
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y
+          libgl1-mesa-glx
+          libgl1-mesa-dev
+          libglapi-mesa
+          libosmesa-dev
+          libxt-dev
+
+      - name: Checkout VTK
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        uses: actions/checkout@v2
+        with:
+          repository: kitware/vtk
+          path: vtk
+          ref: v${{ env.VTK_VERSION }}
+
+      - name: Patch (to support python >= 3.8)
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        working-directory: vtk
+        run: patch -p1 < ${{ github.workspace }}/builder/vtk-py38.patch
+
+      - name: Configure
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.pythonLocation }}
+          INSTALL_PREFIX: /opt/vtk
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: builder/configure-vtk-ubuntu.sh
+
+      - name: Build
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        run: cmake --build build -j 4
+
+      - name: Install
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        run: cmake --install build
+
+      - name: Make archive
+        working-directory: /opt/vtk
+        run: >
+          tar -czf
+          ${{ github.workspace }}/VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
+          *
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+          path: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
