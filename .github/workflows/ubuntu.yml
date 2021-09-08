@@ -8,7 +8,8 @@ on:
 env:
   VTK_VERSION: 8.2.0
   ITK_VERSION: 4.13.3
-  VMTK_VERSION: 1.4.0
+  VMTK_VERSION: 1.4.1-hemelb
+  VMTK_HASH: 63a3b990328d8dfaa6ffd31968fc341cad9dbe67
   PLATFORM: ubuntu
 
 jobs:
@@ -199,7 +200,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: /opt/vmtk
-          key: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}-vtk${{ env.VTK_VERSION }}-itk${{ env.ITK_VERSION }}-${{ hashFiles('builder/configure-vmtk-ubuntu.sh') }}
+          key: VMTK-${{ env.VMTK_HASH }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}-vtk${{ env.VTK_VERSION }}-itk${{ env.ITK_VERSION }}-${{ hashFiles('builder/configure-vmtk-ubuntu.sh') }}
 
       - uses: actions/setup-python@v2
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
@@ -225,7 +226,7 @@ jobs:
         with:
           repository: vmtk/vmtk
           path: vmtk
-          ref: v${{ env.VMTK_VERSION }}
+          ref: ${{ env.VMTK_HASH }}
 
       - name: Get VTK
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
@@ -266,7 +267,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: failed-VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+          name: failed-VMTK-${{ env.VMTK_HASH }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: build
 
       - name: Install
