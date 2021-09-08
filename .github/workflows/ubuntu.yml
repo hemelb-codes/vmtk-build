@@ -95,3 +95,81 @@ jobs:
         with:
           name: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
+
+  ITK:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+
+    steps:
+
+      - name: Checkout this repo
+        uses: actions/checkout@v2
+        with:
+          path: builder
+
+      - name: Cache
+        id: cache-itk
+        uses: actions/cache@v2
+        with:
+          path: /opt/itk
+          key: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}-${{ hashFiles('builder/configure-itk-ubuntu.sh') }}
+
+      - uses: actions/setup-python@v2
+        if: steps.cache-itk.outputs.cache-hit != 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: APT packages
+        if: steps.cache-itk.outputs.cache-hit != 'true'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y
+          libgl1-mesa-glx
+          libgl1-mesa-dev
+          libglapi-mesa
+          libosmesa-dev
+          libxt-dev
+
+      - name: Checkout ITK
+        if: steps.cache-itk.outputs.cache-hit != 'true'
+        uses: actions/checkout@v2
+        with:
+          repository: InsightSoftwareConsortium/ITK
+          path: itk
+          ref: v${{ env.ITK_VERSION }}
+
+      - name: Configure
+        if: steps.cache-itk.outputs.cache-hit != 'true'
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.pythonLocation }}
+          INSTALL_PREFIX: /opt/itk
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: builder/configure-itk-ubuntu.sh
+
+      - name: Build
+        if: steps.cache-itk.outputs.cache-hit != 'true'
+        run: cmake --build build -j 4
+
+      - name: Install
+        if: steps.cache-itk.outputs.cache-hit != 'true'
+        run: cmake --install build
+
+      - name: Make archive
+        working-directory: /opt/itk
+        run: >
+          tar -czf
+          ${{ github.workspace }}/ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
+          *
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+          path: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
