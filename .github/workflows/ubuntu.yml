@@ -8,7 +8,7 @@ on:
 env:
   VTK_VERSION: 8.2.0
   ITK_VERSION: 4.13.3
-  VMTK_VERSION: 1.4.1-hemelb
+  VMTK_VERSION: 1.4.1-rc2
   VMTK_HASH: 63a3b990328d8dfaa6ffd31968fc341cad9dbe67
   PLATFORM: ubuntu
 
@@ -84,6 +84,12 @@ jobs:
       - name: Install
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: cmake --install build
+
+      - name: Make visible to setuptools
+        env:
+          SITE_PACKAGES_DIR: /opt/vtk/lib/python${{ matrix.python-version }}/site-packages
+          NAME: vtk
+        run: VERSION=$VTK_VERSION builder/bodge-dist-info.sh
 
       - name: Make archive
         working-directory: /opt/vtk
@@ -162,6 +168,12 @@ jobs:
       - name: Install
         if: steps.cache-itk.outputs.cache-hit != 'true'
         run: cmake --install build
+
+      - name: Make visible to setuptools
+        env:
+          SITE_PACKAGES_DIR: /opt/itk/lib/python${{ matrix.python-version }}/site-packages
+          NAME: itk
+        run: VERSION=$ITK_VERSION builder/bodge-dist-info.sh
 
       - name: Make archive
         working-directory: /opt/itk
@@ -274,6 +286,12 @@ jobs:
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
         run: cmake --install build
 
+      - name: Make visible to setuptools
+        env:
+          SITE_PACKAGES_DIR: /opt/vmtk/lib/python${{ matrix.python-version }}/site-packages
+          NAME: vmtk
+        run: VERSION=$VMTK_VERSION builder/bodge-dist-info.sh
+
       - name: Make archive
         working-directory: /opt/vmtk
         run: >
@@ -318,6 +336,15 @@ jobs:
         with:
           name: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
+      - name: Make combined tarball
+        run: |
+          mkdir -p /opt/vmtk
+          tar -xzf VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz -C /opt/vmtk
+          tar -xzf ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz -C /opt/vmtk
+          tar -xzf VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz -C /opt/vmtk
+          cd /opt/vmtk
+          tar -czf ${{ github.workspace }}/all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz *
+
       - name: Add tarballs to release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -326,3 +353,4 @@ jobs:
           VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
           ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
           VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
+          all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
