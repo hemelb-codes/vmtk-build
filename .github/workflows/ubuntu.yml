@@ -2,43 +2,46 @@ on:
   push:
     branches: [main]
 
+  pull_request:
+
   release:
     types: [created]
 
 env:
-  VTK_VERSION: 8.2.0
-  ITK_VERSION: 4.13.3
-  VMTK_VERSION: 1.4.1-rc4
-  VMTK_HASH: 63a3b990328d8dfaa6ffd31968fc341cad9dbe67
+  VTK_VERSION: 9.1.0
+  ITK_VERSION: 5.2.1
+  VMTK_VERSION: 1.5.0
+  VMTK_FORK: vmtk
+  VMTK_HASH: 30b0fdad5674d6f134e8a8b601bcef7917671b0a
   PLATFORM: ubuntu
 
 jobs:
 
   VTK-build:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         python-version:
-          - "3.6"
-          - "3.7"
           - "3.8"
           - "3.9"
+          - "3.10"
+          - "3.11"
 
     steps:
       - name: Checkout this repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: builder
 
       - name: Cache
         id: cache-vtk
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /opt/vtk
           key: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}-${{ hashFiles('builder/configure-vtk-ubuntu.sh') }}
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -49,16 +52,11 @@ jobs:
 
       - name: Checkout VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: kitware/vtk
           path: vtk
           ref: v${{ env.VTK_VERSION }}
-
-      - name: Patch (to support python >= 3.8)
-        if: steps.cache-vtk.outputs.cache-hit != 'true'
-        working-directory: vtk
-        run: patch -p1 < ${{ github.workspace }}/builder/vtk-py38.patch
 
       - name: Configure
         if: steps.cache-vtk.outputs.cache-hit != 'true'
@@ -72,16 +70,16 @@ jobs:
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: cmake --build build -j 4
 
+      - name: Get failed build tree
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          path: build
+          name: vtk-${{ env.VTK_VERSION }}-failed-build
+
       - name: Install
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: cmake --install build
-
-      - name: Un-hardcode the python location in CMake config
-        if: steps.cache-vtk.outputs.cache-hit != 'true'
-        env:
-          BUILD_DIR: build
-          CMAKE_CONFIG_DIR: /opt/vtk/lib/cmake
-        run: builder/unhardcode-python-location.sh
 
       - name: Make visible to setuptools
         env:
@@ -96,36 +94,35 @@ jobs:
           ${{ github.workspace }}/VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
           *
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
 
   ITK-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         python-version:
-          - "3.6"
-          - "3.7"
           - "3.8"
           - "3.9"
+          - "3.10"
+          - "3.11"
 
     steps:
-
       - name: Checkout this repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: builder
 
       - name: Cache
         id: cache-itk
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /opt/itk
           key: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}-${{ hashFiles('builder/configure-itk-ubuntu.sh') }}
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         if: steps.cache-itk.outputs.cache-hit != 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -136,7 +133,7 @@ jobs:
 
       - name: Checkout ITK
         if: steps.cache-itk.outputs.cache-hit != 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: InsightSoftwareConsortium/ITK
           path: itk
@@ -165,39 +162,38 @@ jobs:
           ${{ github.workspace }}/ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
           *
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
 
   VMTK-build:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [VTK-build, ITK-build]
 
     strategy:
       matrix:
         python-version:
-          - "3.6"
-          - "3.7"
           - "3.8"
           - "3.9"
+          - "3.10"
+          - "3.11"
 
     steps:
-
       - name: Checkout this repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: builder
 
       - name: Cache VMTK
         id: cache-vmtk
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /opt/vmtk
           key: VMTK-${{ env.VMTK_HASH }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}-vtk${{ env.VTK_VERSION }}-itk${{ env.ITK_VERSION }}-${{ hashFiles('builder/configure-vmtk-ubuntu.sh') }}
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -208,15 +204,15 @@ jobs:
 
       - name: Checkout VMTK
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          repository: vmtk/vmtk
+          repository: ${{ env.VMTK_FORK }}/vmtk
           path: vmtk
           ref: ${{ env.VMTK_HASH }}
 
       - name: Get VTK
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: deps
@@ -227,7 +223,7 @@ jobs:
 
       - name: Get ITK
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: deps
@@ -251,7 +247,7 @@ jobs:
 
       - name: Store failed build tree
         if: failure()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: failed-VMTK-${{ env.VMTK_HASH }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: build
@@ -273,7 +269,7 @@ jobs:
           ${{ github.workspace }}/VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
           *
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
@@ -281,31 +277,31 @@ jobs:
   package:
     needs: [VTK-build, ITK-build, VMTK-build]
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
         python-version:
-          - "3.6"
-          - "3.7"
           - "3.8"
           - "3.9"
+          - "3.10"
+          - "3.11"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get VTK
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Get ITK
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Get VMTK
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
@@ -322,7 +318,7 @@ jobs:
           cd /opt/vmtk
           tar -czf ${{ github.workspace }}/all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz *
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
@@ -332,35 +328,36 @@ jobs:
 
     needs: [package]
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
         python-version:
-          - "3.6"
-          - "3.7"
           - "3.8"
           - "3.9"
+          - "3.10"
+          - "3.11"
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get VTK
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Get ITK
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Get VMTK
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Get All
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
