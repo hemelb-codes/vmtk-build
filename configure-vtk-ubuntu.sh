@@ -4,6 +4,7 @@ thisdir=$(readlink -f $(dirname $BASH_SOURCE))
 . $thisdir/cmake_help.sh
  
 declare -A D
+
 D[CMAKE_INSTALL_PREFIX]=$INSTALL_PREFIX
 D[CMAKE_BUILD_TYPE]=Release
 D[BUILD_SHARED_LIBS]=ON
