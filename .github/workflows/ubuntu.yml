@@ -67,6 +67,13 @@ jobs:
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: cmake --build build -j 4
 
+      - name: Get failed build tree
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          path: build
+          name: vtk-${{ env.VTK_VERSION }}-failed-build
+
       - name: Install
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: cmake --install build
