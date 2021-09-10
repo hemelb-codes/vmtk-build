@@ -1,15 +1,15 @@
 on:
   push:
-    branches: [main]
+    branches: [main, vtk9]
 
   release:
     types: [created]
 
 env:
-  VTK_VERSION: 8.2.0
+  VTK_VERSION: 9.0.3
   ITK_VERSION: 4.13.3
-  VMTK_VERSION: 1.4.1-rc4
-  VMTK_HASH: 63a3b990328d8dfaa6ffd31968fc341cad9dbe67
+  VMTK_VERSION: vtk9
+  VMTK_HASH: 671b54d7b3b243d3d2ce662ffa7f678f53ee18a1
   PLATFORM: ubuntu
 
 jobs:
@@ -54,11 +54,6 @@ jobs:
           repository: kitware/vtk
           path: vtk
           ref: v${{ env.VTK_VERSION }}
-
-      - name: Patch (to support python >= 3.8)
-        if: steps.cache-vtk.outputs.cache-hit != 'true'
-        working-directory: vtk
-        run: patch -p1 < ${{ github.workspace }}/builder/vtk-py38.patch
 
       - name: Configure
         if: steps.cache-vtk.outputs.cache-hit != 'true'
@@ -210,7 +205,7 @@ jobs:
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
         uses: actions/checkout@v2
         with:
-          repository: vmtk/vmtk
+          repository: jcfr/vmtk
           path: vmtk
           ref: ${{ env.VMTK_HASH }}
 
