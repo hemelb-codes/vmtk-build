@@ -8,7 +8,7 @@ on:
 env:
   VTK_VERSION: 8.2.0
   ITK_VERSION: 4.13.3
-  VMTK_VERSION: 1.4.1-rc2
+  VMTK_VERSION: 1.4.1-rc3
   VMTK_HASH: 63a3b990328d8dfaa6ffd31968fc341cad9dbe67
   PLATFORM: ubuntu
 
