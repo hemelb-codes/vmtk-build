@@ -85,6 +85,13 @@ jobs:
         if: steps.cache-vtk.outputs.cache-hit != 'true'
         run: cmake --install build
 
+      - name: Un-hardcode the python location in CMake config
+        if: steps.cache-vtk.outputs.cache-hit != 'true'
+        env:
+          BUILD_DIR: build
+          CMAKE_CONFIG_DIR: /opt/vtk/lib/cmake
+        run: builder/unhardcode-python-location.sh
+
       - name: Make visible to setuptools
         env:
           SITE_PACKAGES_DIR: /opt/vtk/lib/python${{ matrix.python-version }}/site-packages
