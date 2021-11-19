@@ -9,7 +9,8 @@ env:
   VTK_VERSION: 9.0.3
   ITK_VERSION: 4.13.3
   VMTK_VERSION: vtk9
-  VMTK_HASH: 671b54d7b3b243d3d2ce662ffa7f678f53ee18a1
+  VMTK_FORK: kayarre
+  VMTK_HASH: 469984ac2ecf8a8a36dac2dc24e776cfe27f74aa
   PLATFORM: ubuntu
 
 jobs:
@@ -205,7 +206,7 @@ jobs:
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
         uses: actions/checkout@v2
         with:
-          repository: jcfr/vmtk
+          repository: ${{ env.VMTK_FORK }}/vmtk
           path: vmtk
           ref: ${{ env.VMTK_HASH }}
 
