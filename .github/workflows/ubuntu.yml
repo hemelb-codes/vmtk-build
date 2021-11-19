@@ -7,7 +7,7 @@ on:
 
 env:
   VTK_VERSION: 9.0.3
-  ITK_VERSION: 4.13.3
+  ITK_VERSION: 5.2.1
   VMTK_VERSION: vtk9
   VMTK_FORK: kayarre
   VMTK_HASH: 469984ac2ecf8a8a36dac2dc24e776cfe27f74aa
