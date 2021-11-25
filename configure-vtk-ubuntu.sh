@@ -1,16 +1,18 @@
 #!/bin/bash
 
-cmake \
-    -B build \
-    -S vtk \
-    -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_SHARED_LIBS=ON \
-    -DVTK_WRAP_PYTHON=ON \
-    -DVTK_PYTHON_VERSION=$PYTHON_VERSION \
-    -DVTK_Group_Rendering:BOOL=ON \
-    -DVTK_USE_X:BOOL=ON \
-    -DBUILD_EXAMPLES:BOOL=OFF \
-    -DBUILD_TESTING:BOOL=OFF \
-    -DVTK_RENDERING_BACKEND:STRING=OpenGL2 \
-    -DCMAKE_BUILD_WITH_INSTALL_RPATH=OFF
+thisdir=$(readlink -f $(dirname $BASH_SOURCE))
+. $thisdir/cmake_help.sh
+ 
+declare -A D
+D[CMAKE_INSTALL_PREFIX]=$INSTALL_PREFIX
+D[CMAKE_BUILD_TYPE]=Release
+D[BUILD_SHARED_LIBS]=ON
+D[VTK_WRAP_PYTHON]=ON
+D[VTK_PYTHON_VERSION]=3
+D[VTK_Group_Rendering]=ON
+D[BUILD_TESTING]=OFF
+D[CMAKE_BUILD_WITH_INSTALL_RPATH]=OFF
+
+mkdir -p build
+cd build
+run_cmake D ../vtk

@@ -8,7 +8,7 @@ on:
 env:
   VTK_VERSION: 8.2.0
   ITK_VERSION: 4.13.3
-  VMTK_VERSION: 1.4.1-rc3
+  VMTK_VERSION: 1.4.1-rc4
   VMTK_HASH: 63a3b990328d8dfaa6ffd31968fc341cad9dbe67
   PLATFORM: ubuntu
 
@@ -45,16 +45,7 @@ jobs:
 
       - name: APT packages
         if: steps.cache-vtk.outputs.cache-hit != 'true'
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: >
-          sudo apt-get update &&
-          sudo apt-get install -y
-          libgl1-mesa-glx
-          libgl1-mesa-dev
-          libglapi-mesa
-          libosmesa-dev
-          libxt-dev
+        run: builder/.github/workflows/apt-install.sh
 
       - name: Checkout VTK
         if: steps.cache-vtk.outputs.cache-hit != 'true'
@@ -141,16 +132,7 @@ jobs:
 
       - name: APT packages
         if: steps.cache-itk.outputs.cache-hit != 'true'
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: >
-          sudo apt-get update &&
-          sudo apt-get install -y
-          libgl1-mesa-glx
-          libgl1-mesa-dev
-          libglapi-mesa
-          libosmesa-dev
-          libxt-dev
+        run: builder/.github/workflows/apt-install.sh
 
       - name: Checkout ITK
         if: steps.cache-itk.outputs.cache-hit != 'true'
@@ -228,16 +210,7 @@ jobs:
 
       - name: APT packages
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: >
-          sudo apt-get update &&
-          sudo apt-get install -y
-          libgl1-mesa-glx
-          libgl1-mesa-dev
-          libglapi-mesa
-          libosmesa-dev
-          libxt-dev
+        run: builder/.github/workflows/apt-install.sh
 
       - name: Checkout VMTK
         if: steps.cache-vmtk.outputs.cache-hit != 'true'
