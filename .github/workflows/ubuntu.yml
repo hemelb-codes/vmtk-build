@@ -158,12 +158,6 @@ jobs:
         if: steps.cache-itk.outputs.cache-hit != 'true'
         run: cmake --install build
 
-      - name: Make visible to setuptools
-        env:
-          SITE_PACKAGES_DIR: /opt/itk/lib/python${{ matrix.python-version }}/site-packages
-          NAME: itk
-        run: VERSION=$ITK_VERSION builder/bodge-dist-info.sh
-
       - name: Make archive
         working-directory: /opt/itk
         run: >
