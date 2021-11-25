@@ -311,11 +311,15 @@ jobs:
           name: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Make combined tarball
+        env:
+          PY_VER: ${{ matrix.python-version }}
+          PREFIX: /opt/vmtk
         run: |
           mkdir -p /opt/vmtk
           tar -xzf VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz -C /opt/vmtk
           tar -xzf ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz -C /opt/vmtk
           tar -xzf VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz -C /opt/vmtk
+          bash fix-rpaths.sh
           cd /opt/vmtk
           tar -czf ${{ github.workspace }}/all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz *
 
