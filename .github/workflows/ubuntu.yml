@@ -278,9 +278,8 @@ jobs:
           name: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
           path: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
 
-  release:
+  package:
     needs: [VTK-build, ITK-build, VMTK-build]
-    if: github.event_name == 'release'
 
     runs-on: ubuntu-20.04
 
@@ -298,12 +297,12 @@ jobs:
       - name: Get VTK
         uses: actions/download-artifact@v2
         with:
-          name:  VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+          name: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Get ITK
         uses: actions/download-artifact@v2
         with:
-          name:  ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+          name: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Get VMTK
         uses: actions/download-artifact@v2
@@ -322,6 +321,48 @@ jobs:
           bash fix-rpaths.sh
           cd /opt/vmtk
           tar -czf ${{ github.workspace }}/all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz *
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+          path: all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}.tar.gz
+
+  release:
+    if: github.event_name == 'release'
+
+    needs: [package]
+
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get VTK
+        uses: actions/download-artifact@v2
+        with:
+          name: VTK-${{ env.VTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+
+      - name: Get ITK
+        uses: actions/download-artifact@v2
+        with:
+          name: ITK-${{ env.ITK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+
+      - name: Get VMTK
+        uses: actions/download-artifact@v2
+        with:
+          name: VMTK-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
+
+      - name: Get All
+        uses: actions/download-artifact@v2
+        with:
+          name: all-${{ env.VMTK_VERSION }}-${{ env.PLATFORM }}-py${{ matrix.python-version }}
 
       - name: Add tarballs to release assets
         env:
