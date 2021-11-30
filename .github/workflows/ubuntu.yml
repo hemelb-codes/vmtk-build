@@ -9,8 +9,8 @@ env:
   VTK_VERSION: 9.0.3
   ITK_VERSION: 5.2.1
   VMTK_VERSION: vtk9
-  VMTK_FORK: kayarre
-  VMTK_HASH: 469984ac2ecf8a8a36dac2dc24e776cfe27f74aa
+  VMTK_FORK: vmtk
+  VMTK_HASH: b5e8d0a86c63b629fc0199ee30114efd72fcb183
   PLATFORM: ubuntu
 
 jobs:
